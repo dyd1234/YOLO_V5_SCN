@@ -1,0 +1,5 @@
+train: ../train/images
+val: ../valid/images
+
+nc: 60
+names: ['African_hunting_dog', 'Appenzeller', 'Bernese_mountain_dog', 'Border_collie', 'Bouvier_des_Flandres', 'Brabancon_griffon', 'Brittany_spaniel', 'Cardigan', 'Doberman', 'English_setter', 'English_springer', 'EntleBucher', 'Eskimo_dog', 'French_bulldog', 'German_shepherd', 'Gordon_setter', 'Great_Dane', 'Great_Pyrenees', 'Greater_Swiss_Mountain_dog', 'Irish_setter', 'Irish_water_spaniel', 'Leonberg', 'Mexican_hairless', 'Newfoundland', 'Old_English_sheepdog', 'Pembroke', 'Pomeranian', 'Rottweiler', 'Saint_Bernard', 'Samoyed', 'Shetland_sheepdog', 'Siberian_husky', 'Sussex_spaniel', 'Tibetan_mastiff', 'Welsh_springer_spaniel', 'affenpinscher', 'basenji', 'boxer', 'briard', 'bull_mastiff', 'chow', 'clumber', 'cocker_spaniel', 'collie', 'dhole', 'dingo', 'groenendael', 'keeshond', 'kelpie', 'komondor', 'kuvasz', 'malamute', 'malinois', 'miniature_pinscher', 'miniature_poodle', 'pug', 'schipperke', 'standard_poodle', 'toy_poodle', 'vizsla']
