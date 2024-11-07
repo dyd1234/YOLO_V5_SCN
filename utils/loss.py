@@ -136,7 +136,7 @@ class ComputeLoss:
         self.anchors = m.anchors
         self.device = device
 
-    def __call__(self, p, targets):  # predictions, targets
+    def __call__(self, p, targets, beta2_p=None):  # predictions, targets
         """Performs forward pass, calculating class, box, and object loss for given predictions and targets."""
         lcls = torch.zeros(1, device=self.device)  # class loss
         lbox = torch.zeros(1, device=self.device)  # box loss
@@ -190,6 +190,14 @@ class ComputeLoss:
         lobj *= self.hyp["obj"]
         lcls *= self.hyp["cls"]
         bs = tobj.shape[0]  # batch size
+
+        # return (lbox + lobj + lcls) * bs, torch.cat((lbox, lobj, lcls)).detach()
+        if beta2_p is not None:
+            # print(f"The input is {beta2_p}")
+            # print(f"The loss of all is {lbox} + {lobj} + {lcls} = {lbox + lobj + lcls} * {bs} = {(lbox + lobj + lcls) * bs}")
+            # print(f"After using the beta2 is {(lbox + lobj + lcls + beta2_p) * bs}")
+            # input()
+            return (lbox + lobj + lcls + beta2_p) * bs, torch.cat((lbox, lobj, lcls)).detach()
 
         return (lbox + lobj + lcls) * bs, torch.cat((lbox, lobj, lcls)).detach()
 

@@ -1386,7 +1386,7 @@ def reset_bn_stats(model, loader, device, epochs=1):
 
 # try with SCN type and other stuff
 # pls remember that the model is SCN YOLO
-def reset_bn_stats_scn_rotate(model, train_loader, device, if_half=True, epochs=1): # modify it later 
+def reset_bn_stats_scn_rotate(model, train_loader, device, if_half=False, epochs=1): # modify it later 
     num_data = 0
     # resetting stats to baseline first as below is necessary for stability
     for m in model.modules():
@@ -1411,17 +1411,27 @@ def reset_bn_stats_scn_rotate(model, train_loader, device, if_half=True, epochs=
 
                 images = TF.rotate(images, -angle) # to clock wise 
 
+                if(if_half):
+                    images = images.to(device, non_blocking=True).half() / 255  # uint8 to float32, 0-255 to 0.0-1.0
+
+                else:
+                    images = images.to(device, non_blocking=True).float() / 255  # uint8 to float32, 0-255 to 0.0-1.0
+
                 # default to set them on GPU
-                images = images.to(device, non_blocking=True)
+                # images = images.to(device, non_blocking=True)
                 
-                images = images.half() if if_half else images.float()  # uint8 to fp16/32
+                # images = images.half() if if_half else images.float()  # uint8 to fp16/32
 
                 Hyper_X = transform_angle(angle).to(device)
-                if if_half == True: # 
+
+                if(if_half):
                     Hyper_X = Hyper_X.half() # set to half type
 
+                # if if_half == True: # 
+                #     Hyper_X = Hyper_X.half() # set to half type
+
                 # seenms I only need to rotate but I dont need to calc the loss, nice! 
-                output = model(images.to(device), Hyper_X) # SCN type, always using the half
+                output = model(images, Hyper_X) # SCN type, always using the half
                 num_data += len(images) # why 1000?
                 # if num_data >= 1000:
                 #     print("Enough data for REPAIR")
@@ -1432,10 +1442,11 @@ def reset_bn_stats_scn_rotate(model, train_loader, device, if_half=True, epochs=
     return model 
 
 # for scaling case 
+# align with the last one 
 def reset_bn_stats_scn_scaling(model, train_loader, device, epochs=1): # modify it later 
     num_data = 0
     # resetting stats to baseline first as below is necessary for stability
-    for m in model.modules():
+    for m in model.modules(): # 
         if is_batchnorm(m):
             m.momentum = None
             m.reset_running_stats()
