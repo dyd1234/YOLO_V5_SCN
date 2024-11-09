@@ -278,32 +278,32 @@ def train(hyp, opt, device, callbacks): #
     # # check compute graphic is following:
     # print(f"The model is {model}")
 
-    # model_host = model
-    # model_host.eval()  # 切换到评估模式
-    # # 2. 定义输入张量，假设输入为 3x224x224 的图像
-    # input_tensor = torch.randn(1, 3, 320, 320).to(device)
+    model_host = model
+    model_host.eval()  # 切换到评估模式
+    # 2. 定义输入张量，假设输入为 3x224x224 的图像
+    input_tensor = torch.randn(1, 3, 320, 320).to(device)
 
-    # # scale = random.uniform(0.2, 1.8) # make it meaningful?
+    # scale = random.uniform(0.2, 1.8) # make it meaningful?
 
-    # # Hyper_X = Tensor([scale]).to(device) #
+    # Hyper_X = Tensor([scale]).to(device) #
 
-    # angle = random.uniform(0, 360) # anti clock-wise
-    # # angle = random.uniform(0, 90) # anti clock-wise try this one with less rotatio
+    angle = random.uniform(0, 360) # anti clock-wise
+    # angle = random.uniform(0, 90) # anti clock-wise try this one with less rotatio
 
-    # Hyper_X = transform_angle(angle).to(device) # 
+    Hyper_X = transform_angle(angle).to(device) # 
 
-    # # traced_model = torch.jit.trace(model_host, (input_tensor, Hyper_X))
+    # traced_model = torch.jit.trace(model_host, (input_tensor, Hyper_X))
 
-    # # 4. 使用 SummaryWriter 将计算图写入 TensorBoard
-    # # with SummaryWriter(log_dir='runs/model_graph') as writer:
-    # #     writer.add_graph(model, input_tensor)
+    # 4. 使用 SummaryWriter 将计算图写入 TensorBoard
+    # with SummaryWriter(log_dir='runs/model_graph') as writer:
+    #     writer.add_graph(model, input_tensor)
 
-    # # print("计算图已经保存到 runs/model_graph 中，使用 `tensorboard --logdir=runs` 查看")
+    # print("计算图已经保存到 runs/model_graph 中，使用 `tensorboard --logdir=runs` 查看")
 
 
     # # ------------------------------------------------------
     # # try type 2
-    # y = model_host(input_tensor, Hyper_X)
+    y = model_host(input_tensor, Hyper_X)
 
     # # np_y = np.array(y).cpu()
     # # np_y = torch.tensor(y)
@@ -311,21 +311,41 @@ def train(hyp, opt, device, callbacks): #
     # # np_y = np.array(y.cpu())
 
 
-    # # print(f"The output of the y is {type(y)}")
-    # print(f"The output of the y is {y}") 
+    # print(f"The output of the y is {type(y)}")
+    print(f"The output of the y is {y}") 
 
-    # # np_y = torch.tensor(y, device=device)
+    # np_y = torch.tensor(y, device=device)
 
     
 
-    # # torchviz.make_dot(y, params=dict(model.named_parameters()))
-    # dot = make_dot(y[0], params=dict(model.named_parameters())) # 
-    # # torchviz.make_dot(np_y)
+    # torchviz.make_dot(y, params=dict(model.named_parameters()))
+    dot = make_dot(y[0], params=dict(model.named_parameters())) # 
+    # torchviz.make_dot(np_y)
 
-    # dot.format = "pdf"               # 指定文件格式（可选: pdf, png, svg等）
-    # dot.render("model_graph")        # "model_graph" 是文件名，将生成 model_graph.pdf
+    dot.format = "pdf"               # 指定文件格式（可选: pdf, png, svg等）
+    dot.render("model_graph")        # "model_graph" 是文件名，将生成 model_graph.pdf
 
-    # return 0
+    onnx_path = "multi_input_model.onnx"
+
+    torch.onnx.export(
+        model,
+        (input_tensor, Hyper_X),  # 将多个输入以 tuple 形式传递
+        onnx_path,
+        export_params=True,
+        opset_version=11,
+        do_constant_folding=True,
+        input_names=["input_tensor", "Hyper_X"],  # 设置输入名称
+        output_names=["output"],           # 设置输出名称（假设只有一个输出）
+        dynamic_axes={
+            "input_tensor": {0: "batch_size"},   # 可变批量维度
+            "Hyper_X": {0: "batch_size"},
+            "output": {0: "batch_size"},
+        }
+    )
+
+    print(f"ONNX 模型已成功导出到 {onnx_path}")
+
+    return 0
 
     # Freeze
     freeze = [f"model.{x}." for x in (freeze if len(freeze) > 1 else range(freeze[0]))]  # layers to freeze

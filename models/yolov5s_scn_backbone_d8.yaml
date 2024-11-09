@@ -17,8 +17,8 @@ scn_dimensions: 8 # set several dimensions
 backbone:
   # [from, number, module, args]
   [
-    [-1, 1, Conv, [64, 6, 2, 2]], # 0-P1/2
-    # [-1, 1, Conv_SCN, [64, 6, 2, 2]], # 0-P1/2 
+    # [-1, 1, Conv, [64, 6, 2, 2]], # 0-P1/2
+    [-1, 1, Conv_SCN, [64, 6, 2, 2]], # 0-P1/2 
     # [-1, 1, Conv, [128, 3, 2]], # 1-P2/4 # The pair of the stuff is not valid 
     [-1, 1, Conv_SCN, [128, 3, 2]], # 1-P2/4 # The pair of the stuff is not valid 
     # [-1, 3, C3, [128]],
@@ -35,8 +35,8 @@ backbone:
     [-1, 1, Conv_SCN, [1024, 3, 2]], # 7-P5/32
     # [-1, 3, C3, [1024]],
     [-1, 3, C3_SCN, [1024]],
-    [-1, 1, SPPF, [1024, 5]], # 9
-    # [-1, 1, SPPF_SCN, [1024, 5]], # 9
+    # [-1, 1, SPPF, [1024, 5]], # 9
+    [-1, 1, SPPF_SCN, [1024, 5]], # 9
   ]
 
 # YOLOv5 v6.0 head

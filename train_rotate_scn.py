@@ -484,16 +484,16 @@ def train(hyp, opt, device, callbacks): #
                 # print(f"-----------The hyper_x is {Hyper_X}")
 
                 # place the beta2 penality before loos computation
-                beta1 = model.hyper_stack(Hyper_X)
-                angle2 = random.uniform(0, 360)
-                beta2 = model.hyper_stack(transform_angle(angle2).to(device)) 
-                beta2_p = pow(cos(beta1, beta2),2) # 
+                # beta1 = model.hyper_stack(Hyper_X)
+                # angle2 = random.uniform(0, 360)
+                # beta2 = model.hyper_stack(transform_angle(angle2).to(device)) 
+                # beta2_p = pow(cos(beta1, beta2),2) # 
 
 
                 pred = model(imgs, Hyper_X)  # forward
                 # print(f"The beta2 is {beta2_p}")
-                loss, loss_items = compute_loss(pred, targets.to(device), beta2_p=beta2_p)  # loss scaled by batch_size
-                # loss, loss_items = compute_loss(pred, targets.to(device))  # loss scaled by batch_size
+                # loss, loss_items = compute_loss(pred, targets.to(device), beta2_p=beta2_p)  # loss scaled by batch_size
+                loss, loss_items = compute_loss(pred, targets.to(device))  # loss scaled by batch_size
 
 
                 # dont use the cosine square penality in any cases of the rotation
@@ -636,7 +636,11 @@ def train(hyp, opt, device, callbacks): #
                                             device=device,
                                             if_half=True)
                     
+                    # print(f"The final model is {model_final_test}")
+                    
                     print(f"The model is {model_final_test}") # 
+
+                    input()
 
                     results, _, _ = validate_rotate.run_final_test( #
                         data_dict,

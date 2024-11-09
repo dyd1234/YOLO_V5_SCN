@@ -537,12 +537,14 @@ class BaseModel_SCN(nn.Module): # 重新设计一下如何区分scn和非scn的�
                 self._profile_one_layer(m, x, dt)
             
             # x = m(x)  # run
-            if hyper_x is not None and hasattr(m, 'requires_hyper_x') and m.requires_hyper_x: # 
+            # if hyper_x is not None and hasattr(m, 'requires_hyper_x') and m.requires_hyper_x: # 
+            # if m.__class__.__name__ in isinstance(Conv_SCN, C3_SCN, SPPF_SCN, Bottleneck_SCN, Conv_SCN_B): # need hyper_x
+            if isinstance(m, (Conv_SCN, C3_SCN, SPPF_SCN, Bottleneck_SCN, Conv_SCN_B, Detect_SCN)):
                 # print(f"ccThe requires_hyper_x is {m.requires_hyper_x}")
                 # print(f"ccThe requires_hyper_x is {hasattr(m, 'requires_hyper_x')}")
                 # print(f"ccThe requires_hyper_x is {hyper_x is not None}")
                 # print(f"ccThe layer is {m} --------------------------------------------------------------")
-                x = m(x, hyper_x)  #
+                x = m(x, hyper_x) # check here for the name is OK
             else:
                 # print(f"The layer is {m}")
                 # print(f"The requires_hyper_x is {m.requires_hyper_x}")

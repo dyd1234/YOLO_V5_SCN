@@ -513,7 +513,7 @@ def run( # to cooprate with training
 
 @smart_inference_mode()
 # ----------------------------------------------------------------------------------------------
-def run_final_test(
+def run_final_test( # 
     data,
     weights=None,
     batch_size=32,
@@ -580,7 +580,11 @@ def run_final_test(
         data = check_dataset(data)  # check
 
     # Configure
-    model.eval()
+    model.eval() 
+
+    print(f"The model in the eval is {model}")
+    input()
+
     cuda = device.type != "cpu"
     is_coco = isinstance(data.get("val"), str) and data["val"].endswith(f"coco{os.sep}val2017.txt")  # COCO dataset
     nc = 1 if single_cls else int(data["nc"])  # number of classes
@@ -610,6 +614,7 @@ def run_final_test(
             prefix=colorstr(f"{task}: "),
         )[0]
 
+    
     # Initialize metrics arrays
     mp_nparray, mr_nparray, map50_nparray, map_nparray = [], [], [], []
     tp_nparray, fp_nparray, p_nparray, r_nparray, f1_nparray, ap50_nparray = [], [], [], [], [], []

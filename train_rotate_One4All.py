@@ -425,7 +425,8 @@ def train(hyp, opt, device, callbacks):
             pbar = tqdm(pbar, total=nb, bar_format=TQDM_BAR_FORMAT)  # progress bar
         optimizer.zero_grad()
         for i, (imgs, targets, paths, _) in pbar:  # batch -------------------------------------------------------------
-            angle = random.uniform(0, 360) # anti clock-wise # 方在这里看看
+            # angle = random.uniform(0, 360) # anti clock-wise # 方在这里看看
+            angle = random.uniform(0, 90) # anti clock-wise # try with 0 - 90, this is the way how I do
             # angles_list.append(angle)  # 将 angle 添加到列表中
             callbacks.run("on_train_batch_start")
             ni = i + nb * epoch  # number integrated batches (since train start)

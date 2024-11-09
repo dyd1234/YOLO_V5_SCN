@@ -84,8 +84,9 @@ class Ensemble(nn.ModuleList):
         y = torch.cat(y, 1)  # nms ensemble
         return y, None  # inference, train output
 
-
-def attempt_load(weights, device=None, inplace=True, fuse=True):
+# Try with the later one 
+# 
+def attempt_load(weights, device=None, inplace=True, fuse=True): # 
     """
     Loads and fuses an ensemble or single YOLOv5 model from weights, handling device placement and model adjustments.
 
@@ -113,7 +114,7 @@ def attempt_load(weights, device=None, inplace=True, fuse=True):
             m.inplace = inplace
             if t is Detect and not isinstance(m.anchor_grid, list):
                 delattr(m, "anchor_grid")
-                setattr(m, "anchor_grid", [torch.zeros(1)] * m.nl)
+                setattr(m, "anchor_grid", [torch.zeros(1)] * m.nl) # 
         elif t is nn.Upsample and not hasattr(m, "recompute_scale_factor"):
             m.recompute_scale_factor = None  # torch 1.11.0 compatibility
 

@@ -148,7 +148,7 @@ def replace_layers(model, d):
         elif isinstance(child_module, nn.Conv2d):
             setattr(parent_module, child_name, ScnConv2d(child_module, d))
 
-class SCN(nn.Module):
+class SCN(nn.Module): # 
     def __init__(self, num_alpha:int, dimensions:int, base_model:nn.Module) -> None:
         super(SCN, self).__init__()
         self.dimensions=dimensions
@@ -1278,7 +1278,7 @@ class Conv_SCN2(nn.Module):
             x = self.act(x)
         return x
     
-class Conv_SCN(nn.Module):
+class Conv_SCN(nn.Module): # 
     def __init__(self, dimensions, c1, c2, k=1, s=1, p=None, g=1, d=1, act=True, is_scn=True):
         super().__init__()
         self.is_scn = is_scn
@@ -1470,11 +1470,11 @@ class C3_SCN(nn.Module):
 
 # SPPF SCN stuff
 #  
-class SPPF_SCN(nn.Module):
-    def __init__(self, dimensions, c1, c2, k=5, is_scn=True):
+class SPPF_SCN(nn.Module): # 
+    def __init__(self, dimensions, c1, c2, k=5, is_scn=True): # 
         super().__init__()
         self.is_scn = is_scn
-        self.requires_hyper_x = True
+        self.requires_hyper_x = True 
 
         c_ = c1 // 2
         self.cv1 = Conv_SCN(dimensions, c1, c_, 1, 1, is_scn=self.is_scn)
@@ -1488,3 +1488,124 @@ class SPPF_SCN(nn.Module):
             y1 = self.m(x)
             y2 = self.m(y1)
             return self.cv2(torch.cat((x, y1, y2, self.m(y2)), 1), hyper_x)
+        
+
+
+# Use the new implementation from Dong to test SCN
+# check tonight
+class ScnLayer(nn.Module): # Use this one to make the other stuff run correctly
+    def __init__(self, original_layer, d) -> None:
+        super(ScnLayer, self).__init__()
+        self.original_layer = original_layer
+        self.original_layer.requires_grad_(False)
+        self.d = d
+        self.device = next(original_layer.parameters()).device
+        self.has_bias = self.original_layer.bias is not None
+        self.creat_d_weight_list()
+
+    def creat_d_weight_list(self):
+        # for linear and conv2d modules, there are only weight and bias.
+        # for attention-like layers, you should implement this function in subclass
+        self.weight_list = nn.ParameterList([nn.Parameter(self.original_layer.weight.clone().detach().data) for _ in range(self.d)])
+        if self.has_bias:
+            self.bias_list = nn.ParameterList([nn.Parameter(self.original_layer.bias.clone().detach().data) for _ in range(self.d)])
+
+    def configuration(self, beta):
+        print("configuration")
+        assert self.d == len(beta), "inconsistent dimensions"
+        # for linear and conv2d modules, there are only weight and bias.
+        # for attention-like layers, you should implement this function in subclass
+        weight_list = [a*b for a, b in zip(self.weight_list, beta)]
+        self.weight = torch.sum(torch.stack(weight_list), dim=0)
+        if self.has_bias:
+            bias_list = [a*b for a, b in zip(self.bias_list, beta)]
+            self.bias = torch.sum(torch.stack(bias_list), dim=0)
+        else:
+            self.bias = None
+
+    def forward(self, x):
+        raise NotImplementedError("You should implement this in sub-class module.")
+
+class ScnLinear(ScnLayer):
+    def __init__(self, original_layer, d):
+        super(ScnLinear, self).__init__(original_layer, d)
+        self.in_features = original_layer.in_features
+        self.out_features = original_layer.out_features
+
+    def forward(self, x):
+        print("scn_linear forward")
+        return nn.functional.linear(x, self.weight, self.bias)
+
+class ScnConv2d(ScnLayer):
+    def __init__(self, original_layer, d):
+        super(ScnConv2d, self).__init__(original_layer, d)
+        self.in_channels = original_layer.in_channels
+        self.out_channels = original_layer.out_channels
+        self.kernel_size = original_layer.kernel_size
+        self.stride = original_layer.stride
+        self.padding = original_layer.padding
+        self.dilation = original_layer.dilation
+        self.groups = original_layer.groups
+
+    def forward(self, x):
+        print("scn_conv2d forward")
+        return nn.functional.conv2d(x, self.weight, self.bias, self.stride, self.padding, self.dilation, self.groups)
+
+class SCN(nn.Module):
+    def init(self, num_alpha:int, dimensions:int, base_model:nn.Module) -> None:
+        super(SCN, self).init()
+        self.dimensions=dimensions
+        self.num_alpha = num_alpha
+        # self.hyper_stack  = nn.Sequential(
+        #     nn.Linear(self.num_alpha, 64),
+        #     nn.ReLU(),
+        #     nn.Linear(64, self.dimensions),
+        #     nn.Softmax(dim=0)
+        # )
+
+        self.base_model = base_model
+        # todo: you can add a SCN_parameter_names to control which layers you want to apply SCN
+        # and then only apply replace_layers to those layers
+        replace_layers(self.base_model, self.dimensions)
+
+    def forward(self, x, hyper_out):
+        # hyperout = self.hyper_stack(hyper_x)
+        for name, module in self.base_model.named_modules():
+            if isinstance(module, ScnLayer):
+                print(f"module name{name}")
+                module.configuration(hyper_out)
+        return self.base_model(x)
+    
+# since the implementation of the hypernet is in the outer, I will remove the hypernet to outter 
+class SCN_NO_HYPERNET(nn.Module): # This is still a new one 
+    def init(self, num_alpha:int, dimensions:int, base_model:nn.Module) -> None:
+        super(SCN, self).init()
+        self.dimensions=dimensions
+        self.num_alpha = num_alpha
+        # self.hyper_stack  = nn.Sequential(
+        #     nn.Linear(self.num_alpha, 64),
+        #     nn.ReLU(),
+        #     nn.Linear(64, self.dimensions),
+        #     nn.Softmax(dim=0)
+        # )
+
+        self.base_model = base_model
+        # todo: you can add a SCN_parameter_names to control which layers you want to apply SCN
+        # and then only apply replace_layers to those layers
+        replace_layers(self.base_model, self.dimensions)
+
+    def forward(self, x, hyperout): # The hyper_out is from the outter upper layer
+        # hyperout = self.hyper_stack(hyper_x)
+        for name, module in self.base_model.named_modules():
+            if isinstance(module, ScnLayer):
+                print(f"module name{name}")
+                module.configuration(hyperout)
+        return self.base_model(x)
+    
+# class Conv_SCN(SCN): # Change the way of this part to make a new implementation of the stuff
+#     # def init(self, num_alpha:int, dimensions:int) -> None:
+#     def init(self, dimensions, c1, c2, k=1, s=1, p=None, g=1, d=1, act=True, is_scn=True):
+#         # todo: here you need to import argments to init different resnet18 according to its defination
+#         base_model = Conv(c1, c2, k=k, s=s, p=p, g=g, d=d, act=True)
+#         super(Conv_SCN, self).init(dimensions, c1, c2, k=1, s=1, p=None, g=1, d=1, act=True, is_scn=True)
+

@@ -16,6 +16,14 @@
 
 # align to the SCN setting for head and neck 
 
-# 10.18 try with the same settings with the SCNs and see how it is going to work
-python train_rotate_One4All.py --data stanford_dogs_new.yaml --epochs 500 --weights '' --cfg yolov5s.yaml --hyp data/hyps/hyp.scratch-low-non-rotate_adam.yaml --batch-size 128 --device 0 --cache ram --seed 50 --project YOLOv5_Rotate_tests_one4all --workers 20 --imgsz 320 --optimizer Adam
+# 10.18 try with the same settings with the SCNs and see how it is going to work, good to go
+# python train_rotate_One4All.py --data stanford_dogs_new.yaml --epochs 500 --weights '' --cfg yolov5s.yaml --hyp data/hyps/hyp.scratch-low-non-rotate_adam.yaml --batch-size 128 --device 0 --cache ram --seed 50 --project YOLOv5_Rotate_tests_one4all --workers 20 --imgsz 320 --optimizer Adam
 
+# 10.24 try with the same settings with the SCNs and see how it is going to work, good to go
+# python train_rotate_One4All.py --data stanford_dogs_new.yaml --epochs 500 --weights '' --cfg yolov5s.yaml --hyp data/hyps/hyp.scratch-low-non-rotate_adam.yaml --batch-size 128 --device 0 --cache ram --seed 50 --project YOLOv5_Rotate_tests_one4all --workers 20 --imgsz 320 --optimizer Adam
+
+#11.2 hyp evlolution
+
+# python train_rotate_One4All.py --data stanford_dogs_new.yaml --epochs 500 --weights '' --cfg yolov5s.yaml --hyp data/hyps/hyp.scratch-hyp-evolution.yaml --batch-size 128 --device 0 --cache ram --seed 50 --project YOLOv5_Rotate_tests_one4all_evo --workers 20 --imgsz 320 --optimizer Adam
+
+python train_rotate_One4All.py --data stanford_dogs_new.yaml --epochs 500 --weights '' --cfg yolov5s.yaml --hyp data/hyps/hyp.scratch-hyp-evolution.yaml --batch-size 128 --device 0 --cache ram --seed 50 --project YOLOv5_Rotate_tests_one4all_evo --workers 20 --imgsz 320 --optimizer Adam

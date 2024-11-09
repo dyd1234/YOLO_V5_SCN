@@ -1,0 +1,37 @@
+# Ultralytics YOLOv5 🚀, AGPL-3.0 license
+# Hyperparameters for low-augmentation COCO training from scratch
+# python train.py --batch 64 --cfg yolov5n6.yaml --weights '' --data coco.yaml --img 640 --epochs 300 --linear
+# See tutorials for hyperparameter evolution https://github.com/ultralytics/yolov5#tutorials
+# Use the adam to train the model and see how it goes
+
+# try with this one 
+lr0: 0.001
+lrf: 0.01
+momentum: 0.937
+weight_decay: 0.0005
+warmup_epochs: 3.0
+warmup_momentum: 0.8
+warmup_bias_lr: 0.1
+box: 0.05
+cls: 0.5
+cls_pw: 1.0
+obj: 1.0
+obj_pw: 1.0
+iou_t: 0.2
+anchor_t: 4.0
+fl_gamma: 0.0
+hsv_h: 0.052395
+hsv_s: 0.0015538
+hsv_v: 0.0
+degrees: 0.0
+translate: 0.022503
+scale: 0.0
+shear: 0.0
+perspective: 0.001
+flipud: 0.12134
+fliplr: 0.45973
+# mosaic: 0.0
+mosaic: 1.0
+mixup: 0.0
+copy_paste: 0.0004922
+anchors: 3.0

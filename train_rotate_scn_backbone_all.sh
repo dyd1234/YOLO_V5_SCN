@@ -48,12 +48,7 @@
 # python train_rotate_scn.py --data stanford_dogs_new.yaml --epochs 500 --weights '' --cfg yolov5s_scn_neck_head_d1.yaml --hyp data/hyps/hyp.scratch-low-non-rotate_adam.yaml --batch-size 128 --device 0 --cache ram --seed 50 --project YOLOv5_Rotate_scn_neck_head_test_d1 --workers 20 --imgsz 320 --optimizer Adam
 
 # train with 10.23 backbone all
-# python train_rotate_scn.py --data stanford_dogs_new.yaml --epochs 500 --weights '' --cfg yolov5s_scn_neck_head_d8.yaml --hyp data/hyps/hyp.scratch-low-non-rotate_adam.yaml --batch-size 128 --device 0 --cache ram --seed 50 --project YOLOv5_Rotate_scn_neck_head_test_d8 --workers 20 --imgsz 320 --optimizer Adam
+# python train_rotate_scn.py --data stanford_dogs_new.yaml --epochs 400 --weights '' --cfg yolov5s_scn_backbone_d8.yaml --hyp data/hyps/hyp.scratch-low-non-rotate_adam.yaml --batch-size 128 --device 0 --cache ram --seed 50 --project YOLOv5_Rotate_scn_backbone_all_test_d8_cos_nomosic --workers 20 --imgsz 320 --optimizer Adam
 
-# python train_rotate_scn.py --data stanford_dogs_new.yaml --epochs 500 --weights '' --cfg yolov5s_scn_neck_head_d1.yaml --hyp data/hyps/hyp.scratch-low-non-rotate_adam.yaml --batch-size 128 --device 0 --cache ram --seed 50 --project YOLOv5_Rotate_scn_neck_head_test_d1 --workers 20 --imgsz 320 --optimizer Adam
+python train_rotate_scn.py --data stanford_dogs_new.yaml --epochs 200 --weights '' --cfg yolov5s_scn_backbone_d1.yaml --hyp data/hyps/hyp.scratch-low-non-rotate_adam.yaml --batch-size 128 --device 0 --cache ram --seed 50 --project YOLOv5_Rotate_scn_backbone_all_test_d1_cos_nomosic --workers 20 --imgsz 320 --optimizer Adam
 
-
-# train with 10.23 backbone all
-python train_rotate_scn.py --data stanford_dogs_new.yaml --epochs 500 --weights '' --cfg yolov5s_scn_backbone_d8.yaml --hyp data/hyps/hyp.scratch-low-non-rotate_adam.yaml --batch-size 128 --device 0 --cache ram --seed 50 --project YOLOv5_Rotate_scn_backbone_all_test_d8 --workers 20 --imgsz 320 --optimizer Adam
-
-python train_rotate_scn.py --data stanford_dogs_new.yaml --epochs 500 --weights '' --cfg yolov5s_scn_backbone_d1.yaml --hyp data/hyps/hyp.scratch-low-non-rotate_adam.yaml --batch-size 128 --device 0 --cache ram --seed 50 --project YOLOv5_Rotate_scn_backbone_all_test_d1 --workers 20 --imgsz 320 --optimizer Adam

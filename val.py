@@ -185,7 +185,7 @@ def process_batch(detections, labels, iouv):
 
 
 @smart_inference_mode()
-def run(
+def run( # The name of thje stuff is ?
     data,
     weights=None,  # model.pt path(s)
     batch_size=32,  # batch size
@@ -537,6 +537,7 @@ def parse_opt():
     parser.add_argument("--exist-ok", action="store_true", help="existing project/name ok, do not increment")
     parser.add_argument("--half", action="store_true", help="use FP16 half-precision inference")
     parser.add_argument("--dnn", action="store_true", help="use OpenCV DNN for ONNX inference")
+
     opt = parser.parse_args()
     opt.data = check_yaml(opt.data)  # check YAML
     opt.save_json |= opt.data.endswith("coco.yaml")
@@ -565,6 +566,8 @@ def main(opt):
         $ python val.py --weights yolov5s.pt --data coco128.yaml --img 640
         ```
     """
+
+    # check how to use this part to train the model from an offline .pt file
     check_requirements(ROOT / "requirements.txt", exclude=("tensorboard", "thop"))
 
     if opt.task in ("train", "val", "test"):  # run normally
