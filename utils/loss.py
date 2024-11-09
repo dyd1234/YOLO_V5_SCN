@@ -103,7 +103,7 @@ class QFocalLoss(nn.Module):
             return loss
 
 
-class ComputeLoss:
+class ComputeLoss: # 
     """Computes the total loss for YOLOv5 model predictions, including classification, box, and objectness losses."""
 
     sort_obj_iou = False
@@ -135,7 +135,7 @@ class ComputeLoss:
         self.nl = m.nl  # number of layers
         self.anchors = m.anchors
         self.device = device
-
+# 
     def __call__(self, p, targets, beta2_p=None):  # predictions, targets
         """Performs forward pass, calculating class, box, and object loss for given predictions and targets."""
         lcls = torch.zeros(1, device=self.device)  # class loss
@@ -143,7 +143,11 @@ class ComputeLoss:
         lobj = torch.zeros(1, device=self.device)  # object loss
         tcls, tbox, indices, anchors = self.build_targets(p, targets)  # targets
 
+        # print(f"The beta2_p = {beta2_p}")
+        # return 0
+
         # Losses
+        # 3 layers of the feature maps
         for i, pi in enumerate(p):  # layer index, layer predictions
             b, a, gj, gi = indices[i]  # image, anchor, gridy, gridx
             tobj = torch.zeros(pi.shape[:4], dtype=pi.dtype, device=self.device)  # target obj
@@ -152,6 +156,10 @@ class ComputeLoss:
             if n:
                 # pxy, pwh, _, pcls = pi[b, a, gj, gi].tensor_split((2, 4, 5), dim=1)  # faster, requires torch 1.8.0
                 pxy, pwh, _, pcls = pi[b, a, gj, gi].split((2, 2, 1, self.nc), 1)  # target-subset of predictions
+
+                # print(f"The size of the pxy is {pxy.shape}")
+                # print(f"The size of the pwh is {pwh.shape}")
+                # print(f"The size of the pcls {pcls.shape}")
 
                 # Regression
                 pxy = pxy.sigmoid() * 2 - 0.5
@@ -170,10 +178,12 @@ class ComputeLoss:
                 tobj[b, a, gj, gi] = iou  # iou ratio
 
                 # Classification
+                # the size number the targets is not strictly like the batchsize
+                # would this affect the result?
                 if self.nc > 1:  # cls loss (only if multiple classes)
                     t = torch.full_like(pcls, self.cn, device=self.device)  # targets
                     t[range(n), tcls[i]] = self.cp
-                    lcls += self.BCEcls(pcls, t)  # BCE
+                    lcls += self.BCEcls(pcls, t)  # BCE # 这里的计算loss是怎么进行的？和cls的基本loss计算是不是一样的？
 
                 # Append targets to text file
                 # with open('targets.txt', 'a') as file:
@@ -184,12 +194,37 @@ class ComputeLoss:
             if self.autobalance:
                 self.balance[i] = self.balance[i] * 0.9999 + 0.0001 / obji.detach().item()
 
-        if self.autobalance:
+        if self.autobalance: # 
             self.balance = [x / self.balance[self.ssi] for x in self.balance]
-        lbox *= self.hyp["box"]
+
+        # print(f"The lbox , lobj and lcls are {lbox} and {lobj} and {lcls}")
+
+        # try to set all the beta 2 to sub loss before the scaling and summation
+        if beta2_p is not None:
+            # # lbox += beta2_p*0.1 # iou loss moght not be fully OK
+            # # lobj += beta2_p*0.1# 
+            # lcls += beta2_p * 0.05 # 
+
+            # 0.001 will not affect the result
+            # print()
+            print(f"The lbox , lobj and lcls are {lbox} and {lobj} and {lcls}")
+            # 
+            lbox += beta2_p*0.01 # iou loss might not be fully OK
+            lobj += beta2_p*0.01 # ？
+            lcls += beta2_p*0.01 # 
+            print(f" after penality and scaling The lbox , lobj and lcls are {lbox} and {lobj} and {lcls}") # 
+            input()
+
+        # print(f" after penality The lbox , lobj and lcls are {lbox} and {lobj} and {lcls}") # 
+
+        lbox *= self.hyp["box"] # see if we need to apply beta2 to this one 
         lobj *= self.hyp["obj"]
         lcls *= self.hyp["cls"]
         bs = tobj.shape[0]  # batch size
+
+        # print(f" after penality and scaling The lbox , lobj and lcls are {lbox} and {lobj} and {lcls}") # 
+
+        # input()
 
         # return (lbox + lobj + lcls) * bs, torch.cat((lbox, lobj, lcls)).detach()
         if beta2_p is not None:
@@ -197,7 +232,8 @@ class ComputeLoss:
             # print(f"The loss of all is {lbox} + {lobj} + {lcls} = {lbox + lobj + lcls} * {bs} = {(lbox + lobj + lcls) * bs}")
             # print(f"After using the beta2 is {(lbox + lobj + lcls + beta2_p) * bs}")
             # input()
-            return (lbox + lobj + lcls + beta2_p) * bs, torch.cat((lbox, lobj, lcls)).detach()
+            # return (lbox + lobj + lcls + beta2_p) * bs, torch.cat((lbox, lobj, lcls)).detach()
+            return (lbox + lobj + lcls) * bs, torch.cat((lbox, lobj, lcls)).detach() # test for set the beta2 to each sub loss
 
         return (lbox + lobj + lcls) * bs, torch.cat((lbox, lobj, lcls)).detach()
 

@@ -24,6 +24,7 @@ import time
 from copy import deepcopy
 from datetime import datetime, timedelta
 from pathlib import Path
+from torchviz import make_dot
 
 try:
     import comet_ml  # must be imported before torch (if installed)
@@ -272,6 +273,60 @@ def train(hyp, opt, device, callbacks): #
 
     amp = check_amp(model)  # check AMP
 
+    # print("----------------------------------------------------------------------")
+    # print("Try with the tensor board")
+    # # check compute graphic is following:
+    # print(f"The model is {model}")
+
+    # model_host = model
+    # model_host.eval()  # 切换到评估模式
+    # # 2. 定义输入张量，假设输入为 3x224x224 的图像
+    # input_tensor = torch.randn(1, 3, 320, 320).to(device)
+
+    # # scale = random.uniform(0.2, 1.8) # make it meaningful?
+
+    # # Hyper_X = Tensor([scale]).to(device) #
+
+    # angle = random.uniform(0, 360) # anti clock-wise
+    # # angle = random.uniform(0, 90) # anti clock-wise try this one with less rotatio
+
+    # Hyper_X = transform_angle(angle).to(device) # 
+
+    # # traced_model = torch.jit.trace(model_host, (input_tensor, Hyper_X))
+
+    # # 4. 使用 SummaryWriter 将计算图写入 TensorBoard
+    # # with SummaryWriter(log_dir='runs/model_graph') as writer:
+    # #     writer.add_graph(model, input_tensor)
+
+    # # print("计算图已经保存到 runs/model_graph 中，使用 `tensorboard --logdir=runs` 查看")
+
+
+    # # ------------------------------------------------------
+    # # try type 2
+    # y = model_host(input_tensor, Hyper_X)
+
+    # # np_y = np.array(y).cpu()
+    # # np_y = torch.tensor(y)
+    # # np_y = y.numpy()
+    # # np_y = np.array(y.cpu())
+
+
+    # # print(f"The output of the y is {type(y)}")
+    # print(f"The output of the y is {y}") 
+
+    # # np_y = torch.tensor(y, device=device)
+
+    
+
+    # # torchviz.make_dot(y, params=dict(model.named_parameters()))
+    # dot = make_dot(y[0], params=dict(model.named_parameters())) # 
+    # # torchviz.make_dot(np_y)
+
+    # dot.format = "pdf"               # 指定文件格式（可选: pdf, png, svg等）
+    # dot.render("model_graph")        # "model_graph" 是文件名，将生成 model_graph.pdf
+
+    # return 0
+
     # Freeze
     freeze = [f"model.{x}." for x in (freeze if len(freeze) > 1 else range(freeze[0]))]  # layers to freeze
     for k, v in model.named_parameters():
@@ -479,31 +534,18 @@ def train(hyp, opt, device, callbacks): #
 
             # Forward
             with torch.cuda.amp.autocast(amp): # 
-                # 可以只针对cls——loss尝试进行beta2 penality
                 # pred = model(imgs)  # forward
                 # print(f"-----------The hyper_x is {Hyper_X}")
-
-                # place the beta2 penality before loos computation
+                pred = model(imgs, Hyper_X)  # forward
+                loss, loss_items = compute_loss(pred, targets.to(device))  # loss scaled by batch_size
+                
+                # dont use the cosine square penality in any cases of the rotation
                 beta1 = model.hyper_stack(Hyper_X)
                 angle2 = random.uniform(0, 360)
                 beta2 = model.hyper_stack(transform_angle(angle2).to(device)) 
-                beta2_p = pow(cos(beta1, beta2),2) # 
+                loss += 0.01*pow(cos(beta1, beta2),2) # not working for the d1 case
 
-
-                pred = model(imgs, Hyper_X)  # forward
-                # print(f"The beta2 is {beta2_p}")
-                loss, loss_items = compute_loss(pred, targets.to(device), beta2_p=beta2_p)  # loss scaled by batch_size
-                # loss, loss_items = compute_loss(pred, targets.to(device))  # loss scaled by batch_size
-
-
-                # dont use the cosine square penality in any cases of the rotation
-                # beta1 = model.hyper_stack(Hyper_X)
-                # angle2 = random.uniform(0, 360)
-                # beta2 = model.hyper_stack(transform_angle(angle2).to(device)) 
-                # loss += 0.01*pow(cos(beta1, beta2),2) # not working for the d1 case
-                # loss += pow(cos(beta1, beta2),2) # not working for the d1 case
-
-                # not in use
+                
                 if RANK != -1:
                     loss *= WORLD_SIZE  # gradient averaged between devices in DDP mode
                 if opt.quad:
@@ -512,19 +554,18 @@ def train(hyp, opt, device, callbacks): #
             # scale the loss function with other 
 
             # Backward
-            optimizer.zero_grad()
             scaler.scale(loss).backward() 
 
             # Optimize - https://pytorch.org/docs/master/notes/amp_examples.html
-            # if ni - last_opt_step >= accumulate:
-            scaler.unscale_(optimizer)  # unscale gradients
-            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=10.0)  # clip gradients
-            scaler.step(optimizer)  # optimizer.step
-            scaler.update()
-            # optimizer.zero_grad()
-            if ema:
-                ema.update(model)
-                # last_opt_step = ni
+            if ni - last_opt_step >= accumulate:
+                scaler.unscale_(optimizer)  # unscale gradients
+                torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=10.0)  # clip gradients
+                scaler.step(optimizer)  # optimizer.step
+                scaler.update()
+                optimizer.zero_grad()
+                if ema:
+                    ema.update(model)
+                last_opt_step = ni
 
             # Log
             if RANK in {-1, 0}:
@@ -550,19 +591,15 @@ def train(hyp, opt, device, callbacks): #
             ema.update_attr(model, include=["yaml", "nc", "hyp", "names", "stride", "class_weights"])
             final_epoch = (epoch + 1 == epochs) or stopper.possible_stop
             if not noval or final_epoch:  # Calculate mAP
-                
-                # start with the repair
-                # 
-                model_val = ema.ema
-                model_val = reset_bn_stats_scn_rotate(model_val, train_loader, device) # 
+                print(f"The model is {ema.ema}")
+                return 0
 
                 results, maps, _ = validate_rotate.run(
                     data_dict,
                     batch_size=batch_size // WORLD_SIZE * 2,
                     imgsz=imgsz,
                     half=amp,
-                    # model=ema.ema,
-                    model = model_val,
+                    model=ema.ema,
                     single_cls=single_cls,
                     dataloader=val_loader,
                     save_dir=save_dir,
@@ -616,7 +653,7 @@ def train(hyp, opt, device, callbacks): #
     
     # I start to rescaling the bn layers
     # do the repair stuff 
-    if RANK in {-1, 0}:
+    if RANK in {-1, 0}: # 
         LOGGER.info(f"\n{epoch - start_epoch + 1} epochs completed in {(time.time() - t0) / 3600:.3f} hours.") # 
         for f in last, best:
             if f.exists():
@@ -624,19 +661,23 @@ def train(hyp, opt, device, callbacks): #
                 if f is best:
                     LOGGER.info(f"\nValidating {f}...")
                     # remove the repair
-                    # print(f"The batch_size in the final test is {batch_size // WORLD_SIZE * 2}")
-                    # print(f"The imgsize in the final test is {imgsz}")
-                    # print(f"The single_cls is {single_cls}")
-                    # # print(f"")
+                    print(f"The batch_size in the final test is {batch_size // WORLD_SIZE * 2}")
+                    print(f"The imgsize in the final test is {imgsz}")
+                    print(f"The single_cls is {single_cls}")
+                    # print(f"")
 
-                    # start with the REPAIR
-                    model_final_test = attempt_load(f, device, fuse=False).half() # Use half to do the final test and val
-                    model_final_test = reset_bn_stats_scn_rotate(model_final_test, 
-                                            train_loader=train_loader, 
-                                            device=device,
-                                            if_half=True)
+                    # # start with the REPAIR
+                    model_final_test = attempt_load(f, device).half()
+                    # model_final_test = reset_bn_stats_scn_rotate(model_final_test, 
+                    #                         train_loader=train_loader, 
+                    #                         device=device,
+                    #                         if_half=True)
+                    print("---------------asdasdsadad--dasdsad----------\n")
+                    print(f"The model is {model_final_test}")
+                    print("---------------asdasdsadadddddd------------\n")
                     
-                    print(f"The model is {model_final_test}") # 
+                    return 0
+                    # print(f"The model is {model_final_test}") # 
 
                     results, _, _ = validate_rotate.run_final_test( #
                         data_dict,
